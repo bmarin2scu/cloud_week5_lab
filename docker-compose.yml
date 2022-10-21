@@ -1,0 +1,51 @@
+version: '3.9'
+
+services:
+  
+  db:
+    image: postgres:12.12
+    restart: always
+    hostname: ${DB_HOST}
+    environment:
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./db/data:/var/lib/postgresql/data/
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${PG_PORT}:${PG_PORT}"
+  
+  dba:
+    image: dpage/pgadmin4
+    hostname: dba
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PG_ADMIN_NAME}
+      - PGADMIN_DEFAULT_PASSWORD=${PG_ADMIN_PASS}
+    ports:
+      - "${PG_ADMIN_PORT}:${PG_ADMIN_PORT}"
+  
+  api:
+    build: ./api
+    hostname: ${API_HOST}
+    volumes: 
+      - ./api/code:/app
+    environment:
+      - CONSUMER_PORT=${CONSUMER_PORT}
+    command: python api.py
+    ports:
+      - "${API_PORT}:${API_PORT}"
+  
+  consumer:
+    build: ./consumer
+    hostname: consumer
+    volumes:
+      - ./consumer/code:/app
+    environment:
+      - API_HOST=${API_HOST}
+      - API_PORT=${API_PORT}
+      - API_ENDPOINT=${API_ENDPOINT}
+    command: python consumer.py
+    ports:
+      - "${CONSUMER_PORT}:${CONSUMER_PORT}" 
+  
